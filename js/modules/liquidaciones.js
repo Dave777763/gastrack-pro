@@ -388,9 +388,18 @@ function renderStep4(area){
   // Total de gas recibido en todas las transferencias de este turno
   const totalRecibido = W.transf.reduce((s,t)=>s+t.litros_recibidos_est, 0);
 
-  // Balance Real = (Inv Final - Inv Inicial) + Ventas - Recibos
-  // Si InvFin = InvIni + Recibos - Ventas => Balance 0
-  const bal = invFin - invIni + totalLitrosVenta - totalRecibido;
+  // Total Entregados = Inv Final + Ventas
+  const ltsEntregados = invFin + totalLitrosVenta;
+  
+  // Total Recibidos = Inv Inicial + Descargas
+  const ltsRecibidos = invIni + totalRecibido;
+
+  // Diferencia
+  const bal = ltsEntregados - ltsRecibidos;
+  
+  let badgeBal = '✅'; let colorBal = 'var(--success)'; let textBal = 'Balance Perfecto';
+  if(bal > 1) { badgeBal = '📈'; colorBal = 'var(--warning)'; textBal = 'Sobrante'; }
+  if(bal < -1) { badgeBal = '📉'; colorBal = 'var(--danger)'; textBal = 'Faltante'; }
   
   const fmt=(n,d=2)=>Number(n).toLocaleString('es-MX',{minimumFractionDigits:d});
   area.innerHTML=`
@@ -401,20 +410,20 @@ function renderStep4(area){
         <div class="stat-info"><h3>${fmt(totalLitrosVenta)} L</h3><p>Ventas del Turno</p></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:rgba(6,182,212,0.15)">🔄</div>
         <div class="stat-info"><h3>${fmt(totalRecibido)} L</h3><p>Recibido en Descargas</p></div></div>
-      <div class="stat-card" style="border:1px solid ${Math.abs(bal)>1?'var(--danger)':'transparent'}"><div class="stat-icon" style="background:rgba(${Math.abs(bal)>1?'239,68,68':'245,158,11'},0.15)">${Math.abs(bal)>1?'⚠️':'✅'}</div>
-        <div class="stat-info"><h3>${fmt(Math.abs(bal))} L</h3>
-        <p>${Math.abs(bal)>1?'Diferencia Faltante/Sobrante':'Balance Perfecto'}</p></div></div>
+      <div class="stat-card" style="border:1px solid ${colorBal}"><div class="stat-icon" style="background:${colorBal};color:#fff">${badgeBal}</div>
+        <div class="stat-info"><h3 style="color:${colorBal}">${bal>0?'+':''}${fmt(bal)} L</h3>
+        <p>${textBal}</p></div></div>
     </div>
     
     <div class="card" style="padding:16px;margin-bottom:16px">
-      <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase">MOVIMIENTO DE INVENTARIO (BALANCE)</h4>
-      <table class="data-table"><thead><tr><th>Concepto</th><th>Litros</th></tr></thead><tbody>
-        <tr><td>Inventario Inicial Turno (Todos los tanques)</td><td>${fmt(invIni)} L</td></tr>
-        <tr><td>+ Descargas Recibidas</td><td style="color:var(--success)">+${fmt(totalRecibido)} L</td></tr>
-        <tr><td>− Gas Vendido (Suma de PVAs)</td><td style="color:var(--danger)">−${fmt(totalLitrosVenta)} L</td></tr>
-        <tr style="font-weight:700;border-top:1px solid var(--border)"><td>= Inventario Final Teórico</td><td>${fmt(invIni+totalRecibido-totalLitrosVenta)} L</td></tr>
-        <tr><td>Inventario Final Real (Todos los tanques)</td><td>${fmt(invFin)} L</td></tr>
-        <tr style="font-size:14px"><td><b>Diferencia Total del Turno</b></td><td style="color:${Math.abs(bal)>10?'var(--danger)':'var(--success)'};font-weight:bold">${fmt(bal)} L</td></tr>
+      <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase">BALANCE DE INVENTARIO (ENTREGADOS VS RECIBIDOS)</h4>
+      <table class="data-table"><thead><tr><th>Concepto</th><th>Cálculo</th><th>Total</th></tr></thead><tbody>
+        <tr><td><b>Lts Recibidos</b> (Lo que deberíamos tener)</td><td style="color:var(--text-muted);font-size:12px">Inv. Inicial (${fmt(invIni)}) + Transferencias (${fmt(totalRecibido)})</td><td><b>${fmt(ltsRecibidos)} L</b></td></tr>
+        <tr><td><b>Lts Entregados</b> (Lo que realmente tenemos/salió)</td><td style="color:var(--text-muted);font-size:12px">Inv. Final (${fmt(invFin)}) + Ventas (${fmt(totalLitrosVenta)})</td><td><b>${fmt(ltsEntregados)} L</b></td></tr>
+        <tr style="font-size:14px;border-top:2px solid var(--border)">
+          <td colspan="2"><b>Diferencia Total (Entregados − Recibidos)</b></td>
+          <td style="color:${colorBal};font-weight:bold">${bal>0?'+':''}${fmt(bal)} L</td>
+        </tr>
       </tbody></table>
     </div>`;
   W._totalLitros=totalLitrosVenta;

@@ -111,33 +111,46 @@ async function loadInventarios(area) {
     const invFin = (r.niveles_tanque_corte||[]).reduce((s,n)=>s+((n.pct_fin/100)*n.capacidad),0);
     const recibos = (r.transferencias||[]).reduce((s,t)=>s+(t.litros_recibidos_est||0),0);
     const ventas = r.total_litros||0;
-    const dif = invFin - invIni + ventas - recibos;
+    
+    // Total Entregados = Inv Final + Ventas
+    const ltsEntregados = invFin + ventas;
+    // Total Recibidos = Inv Inicial + Transferencias
+    const ltsRecibidos = invIni + recibos;
+    // Diferencia
+    const dif = ltsEntregados - ltsRecibidos;
+    
     totalDif += dif;
+    
+    let colorBal = 'var(--text-primary)';
+    if (dif > 1) colorBal = 'var(--warning)'; // Sobrante
+    if (dif < -1) colorBal = 'var(--danger)'; // Faltante
     
     return `<tr>
       <td class="td-bold">${r.dia}</td>
       <td>${r.estaciones?.nombre||'—'}</td>
-      <td style="color:var(--text-muted)">${fmt(invIni)}</td>
-      <td style="color:var(--success)">+${fmt(recibos)}</td>
-      <td style="color:var(--danger)">-${fmt(ventas)}</td>
-      <td style="font-weight:600">${fmt(invFin)}</td>
-      <td style="text-align:right; font-weight:800; color:${Math.abs(dif)>10?'var(--danger)':'var(--success)'}">${fmt(dif)} L</td>
+      <td style="color:var(--text-muted)">${fmt(ltsRecibidos)}</td>
+      <td style="color:var(--text-muted)">${fmt(ltsEntregados)}</td>
+      <td style="text-align:right; font-weight:800; color:${colorBal}">${dif>0?'+':''}${fmt(dif)} L</td>
     </tr>`;
   }).join('');
+
+  let totalColor = 'var(--text-primary)';
+  if (totalDif > 1) totalColor = 'var(--warning)';
+  if (totalDif < -1) totalColor = 'var(--danger)';
 
   area.innerHTML = `
     <div style="padding:20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:rgba(99,102,241,0.05)">
       <div>
-        <h3 style="font-size:16px; margin-bottom:4px">Auditoría de Inventarios (Por Turno)</h3>
-        <p style="font-size:12px; color:var(--text-muted)">Evaluación de (Inv Inicial + Recibos - Ventas = Inv Final)</p>
+        <h3 style="font-size:16px; margin-bottom:4px">Balance de Inventarios (Entregados vs Recibidos)</h3>
+        <p style="font-size:12px; color:var(--text-muted)">Dif = (Inv Final + Ventas) − (Inv Inicial + Transferencias Recibidas)</p>
       </div>
       <div style="text-align:right">
-        <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em">Diferencia Acumulada</div>
-        <div style="font-size:24px; font-weight:800; color:${Math.abs(totalDif)>20?'var(--danger)':'var(--success)'}">${fmt(totalDif)} L</div>
+        <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em">Diferencia Neta Periodo</div>
+        <div style="font-size:24px; font-weight:800; color:${totalColor}">${totalDif>0?'+':''}${fmt(totalDif)} L</div>
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>Fecha</th><th>Estación</th><th>Inv. Inicial</th><th>Recibos</th><th>Ventas</th><th>Inv. Final</th><th style="text-align:right">Diferencia</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Estación</th><th>Lts Recibidos (Ini+Transf)</th><th>Lts Entregados (Fin+Ventas)</th><th style="text-align:right">Sobrante / Faltante</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
