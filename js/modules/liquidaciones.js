@@ -1,21 +1,16 @@
 import { supabase } from '../supabase-config.js';
 import { showToast } from '../utils.js';
 
-// ─── Wizard state ─────────────────────────────────────────────────────────────
 let W = {
   step: 1,
   idestacion: '', dia: new Date().toISOString().split('T')[0],
   turno: 'Matutino', idemp: '', precio_litro: 0,
-  lecturas: [],   // [{idpva, nombre, li, lf}]
-  niveles: [],    // [{idtanque, nombre, capacidad, pct_ini, pct_fin}]
-  transf: [],     // [{_id, idpva, nombre, capacidad, pct_ini, pct_fin}]
+  lecturas: [], niveles: []
 };
-let _tid = 0;
 
-// ─── Entry point ─────────────────────────────────────────────────────────────
 export async function renderLiquidaciones(container) {
   W = { step:1, idestacion:'', dia: new Date().toISOString().split('T')[0],
-        turno:'Matutino', idemp:'', precio_litro:0, lecturas:[], niveles:[], transf:[] };
+        turno:'Matutino', idemp:'', precio_litro:0, lecturas:[], niveles:[] };
   container.innerHTML = `
     <div class="page-header">
       <div class="page-header-left"><h1>📋 Liquidaciones</h1><p>Cortes de turno — ventas e inventario</p></div>
@@ -26,7 +21,6 @@ export async function renderLiquidaciones(container) {
   document.getElementById('btn-nuevo').addEventListener('click', () => renderWizard(container));
 }
 
-// ─── List ─────────────────────────────────────────────────────────────────────
 async function loadList() {
   const { data, error } = await supabase.from('liquidaciones')
     .select('*, estaciones(nombre), empleados(nombre,paterno)').order('dia',{ascending:false});
@@ -49,8 +43,7 @@ async function loadList() {
       <td><button class="btn btn-danger btn-icon btn-sm" data-del="${r.id}">🗑️</button></td>
     </tr>`).join('')}
     </tbody></table></div>`;
-  document.querySelectorAll('[data-del]').forEach(b=>
-    b.addEventListener('click',()=>delCorte(b.dataset.del)));
+  document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>delCorte(b.dataset.del)));
 }
 
 function turnoClr(t){ return t==='Matutino'?'warning':t==='Vespertino'?'cyan':'primary'; }
@@ -62,7 +55,6 @@ async function delCorte(id){
   showToast('Corte eliminado','success'); await loadList();
 }
 
-// ─── Wizard shell ─────────────────────────────────────────────────────────────
 function renderWizard(container) {
   container.innerHTML = `
     <div class="page-header">
@@ -83,7 +75,7 @@ function renderWizard(container) {
   renderStep(container);
 }
 
-const STEPS=['Datos Generales','Lecturas PVA','Tanques y Transferencias','Resumen'];
+const STEPS=['Datos Generales','Lecturas PVA','Tanques de Estación','Resumen'];
 
 function renderWizBar(){
   document.getElementById('wiz-bar').innerHTML=`<div style="display:flex;gap:0;margin-bottom:8px">
@@ -119,7 +111,6 @@ function renderStep(container){
   if(W.step===4) renderStep4(area);
 }
 
-// ─── Step 1: Datos generales ──────────────────────────────────────────────────
 async function renderStep1(area){
   const [{data:ests},{data:emps}]=await Promise.all([
     supabase.from('estaciones').select('id,nombre').order('nombre'),
@@ -173,7 +164,6 @@ function validateStep(){
   return true;
 }
 
-// ─── Step 2: Lecturas PVA ─────────────────────────────────────────────────────
 async function loadPVAs(){
   const {data}=await supabase.from('pvas').select('id,pva').eq('idestacion',W.idestacion).order('pva');
   if(!W.lecturas.length) W.lecturas=(data||[]).map(p=>({idpva:p.id,nombre:p.pva,li:0,lf:0}));
@@ -195,7 +185,6 @@ function renderStep2(area){
     </tbody></table>`;
 }
 
-// ─── Step 3: Tanques + Transferencias ────────────────────────────────────────
 async function loadTanques(){
   const {data}=await supabase.from('tanques').select('id,nombre,capacidad').eq('idestacion',W.idestacion).order('nombre');
   if(!W.niveles.length) W.niveles=(data||[]).map(t=>({idtanque:t.id,nombre:t.nombre,capacidad:t.capacidad,pct_ini:0,pct_fin:0}));
@@ -203,9 +192,8 @@ async function loadTanques(){
 
 function renderStep3(area){
   area.innerHTML=`
-    <h3 style="margin-bottom:18px;font-size:15px">Paso 3 — Niveles de Tanques y Transferencias</h3>
-    <h4 style="font-size:13px;color:var(--text-muted);margin-bottom:10px">🛢️ NIVELES DE TANQUES</h4>
-    <table class="data-table" style="margin-bottom:24px"><thead><tr>
+    <h3 style="margin-bottom:18px;font-size:15px">Paso 3 — Niveles de Tanques de la Estación</h3>
+    <table class="data-table"><thead><tr>
       <th>Tanque</th><th>Capacidad</th><th>% Inicial</th><th>% Final</th><th>Litros ini</th><th>Litros fin</th>
     </tr></thead><tbody>
       ${W.niveles.map(n=>`<tr>
@@ -217,95 +205,38 @@ function renderStep3(area){
         <td style="color:var(--accent)">${((n.pct_fin/100)*n.capacidad).toFixed(1)} L</td>
       </tr>`).join('')}
     </tbody></table>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <h4 style="font-size:13px;color:var(--text-muted)">🔄 TRANSFERENCIAS (AUTO-TANQUES)</h4>
-      <button class="btn btn-secondary btn-sm" id="btn-add-transf">+ Agregar</button>
-    </div>
-    <div id="transf-list">
-      ${W.transf.map(t=>transfRow(t)).join('')}
-    </div>`;
-  document.getElementById('btn-add-transf').addEventListener('click',addTransf);
-  bindTransfEvents();
+    <p style="font-size:13px; color:var(--text-muted); margin-top:20px; text-align:center;">
+      ℹ️ Las transferencias o descargas de auto-tanques ahora se capturan de forma independiente en el menú "Transferencias".
+    </p>`;
 }
 
-function transfRow(t){ return `
-  <div class="transf-row" data-tid="${t._id}" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px">
-    <div class="form-row" style="margin-bottom:8px">
-      <div class="form-group"><label class="form-label">Cargador/Auto-tanque</label>
-        <input class="form-control t-nombre" placeholder="Ej. AT-001" value="${t.nombre||''}"></div>
-      <div class="form-group"><label class="form-label">Capacidad (L)</label>
-        <input type="number" class="form-control t-cap" placeholder="10000" value="${t.capacidad||''}"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">% Inicial AT</label>
-        <input type="number" class="form-control t-pi" min="0" max="100" step="0.01" value="${t.pct_ini||''}"></div>
-      <div class="form-group"><label class="form-label">% Final AT</label>
-        <input type="number" class="form-control t-pf" min="0" max="100" step="0.01" value="${t.pct_fin||''}"></div>
-      <div class="form-group" style="display:flex;align-items:flex-end">
-        <button class="btn btn-danger btn-sm btn-del-t" data-tid="${t._id}" style="width:100%">🗑️ Eliminar</button>
-      </div>
-    </div>
-  </div>`; }
-
-function bindTransfEvents(){
-  document.querySelectorAll('.btn-del-t').forEach(b=>b.addEventListener('click',()=>{
-    W.transf=W.transf.filter(t=>t._id!=b.dataset.tid);
-    document.querySelector(`.transf-row[data-tid="${b.dataset.tid}"]`)?.remove();
-  }));
-}
-
-function addTransf(){
-  const t={_id:++_tid,nombre:'',capacidad:0,pct_ini:0,pct_fin:0};
-  W.transf.push(t);
-  const div=document.createElement('div');
-  div.innerHTML=transfRow(t);
-  document.getElementById('transf-list').appendChild(div.firstElementChild);
-  bindTransfEvents();
-}
-
-function collectTransf(){
-  W.transf=W.transf.map(t=>{
-    const row=document.querySelector(`.transf-row[data-tid="${t._id}"]`);
-    if(!row) return t;
-    return {...t,
-      nombre:row.querySelector('.t-nombre').value,
-      capacidad:parseFloat(row.querySelector('.t-cap').value)||0,
-      pct_ini:parseFloat(row.querySelector('.t-pi').value)||0,
-      pct_fin:parseFloat(row.querySelector('.t-pf').value)||0,
-    };
-  });
-}
-
-// ─── Step 4: Resumen ──────────────────────────────────────────────────────────
 function renderStep4(area){
-  collectTransf();
   const totalLitros=W.lecturas.reduce((s,l)=>s+(l.lf-l.li),0);
-  const totalVenta=0; // Omitido por el momento
-  const litrosTransf=W.transf.reduce((s,t)=>s+(((t.pct_ini-t.pct_fin)/100)*t.capacidad),0);
   const invIni=W.niveles.reduce((s,n)=>s+((n.pct_ini/100)*n.capacidad),0);
   const invFin=W.niveles.reduce((s,n)=>s+((n.pct_fin/100)*n.capacidad),0);
-  const bal=invFin-invIni+totalLitros-litrosTransf;
+  // Diferencia sin tomar en cuenta las transferencias, ya que ahora son independientes.
+  // Es decir, si se vendieron 1000L, el inventario final real debería ser InvIni - 1000L.
+  // Si no lo es, hay diferencia. Las transferencias se gestionarán y calcularán en su propio módulo.
+  // (Nota para el usuario: Para un balance de estación perfecto mensual, se sumarán las transferencias).
+  const bal=invFin-invIni+totalLitros; 
   const fmt=(n,d=2)=>Number(n).toLocaleString('es-MX',{minimumFractionDigits:d});
   area.innerHTML=`
     <h3 style="margin-bottom:20px;font-size:15px">Paso 4 — Resumen del Corte</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.15)">⛽</div>
         <div class="stat-info"><h3>${fmt(totalLitros)} L</h3><p>Total Litros Vendidos</p></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:rgba(6,182,212,0.15)">🔄</div>
-        <div class="stat-info"><h3>${fmt(litrosTransf)} L</h3><p>Gas Recibido (transferencias)</p></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:rgba(${bal>1?'239,68,68':'245,158,11'},0.15)">${bal>1?'⚠️':'✅'}</div>
         <div class="stat-info"><h3>${fmt(Math.abs(bal))} L</h3>
-        <p>${bal>1?'Diferencia de inventario':'Balance correcto'}</p></div></div>
+        <p>${bal>1?'Diferencia de turno':'Balance correcto'}</p></div></div>
     </div>
     <div class="card" style="padding:16px;margin-bottom:16px">
       <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase">MOVIMIENTO DE INVENTARIO</h4>
       <table class="data-table"><thead><tr><th>Concepto</th><th>Litros</th></tr></thead><tbody>
         <tr><td>Inventario Inicial (Tanques)</td><td>${fmt(invIni)} L</td></tr>
-        <tr><td>+ Gas Recibido</td><td style="color:var(--success)">+${fmt(litrosTransf)} L</td></tr>
         <tr><td>− Gas Vendido</td><td style="color:var(--danger)">−${fmt(totalLitros)} L</td></tr>
-        <tr style="font-weight:700"><td>= Inventario Final Teórico</td><td>${fmt(invIni+litrosTransf-totalLitros)} L</td></tr>
+        <tr style="font-weight:700"><td>= Inventario Final Teórico</td><td>${fmt(invIni-totalLitros)} L</td></tr>
         <tr><td>Inventario Final Real (Tanques)</td><td>${fmt(invFin)} L</td></tr>
-        <tr><td><b>Diferencia</b></td><td style="color:${Math.abs(bal)>10?'var(--danger)':'var(--success)'}">${fmt(bal)} L</td></tr>
+        <tr><td><b>Diferencia de Turno</b></td><td style="color:${Math.abs(bal)>10?'var(--danger)':'var(--success)'}">${fmt(bal)} L</td></tr>
       </tbody></table>
     </div>
     <div class="card" style="padding:16px">
@@ -317,46 +248,29 @@ function renderStep4(area){
         </tr>`).join('')}
       </tbody></table>
     </div>`;
-  // store computed values
-  W._totalLitros=totalLitros; W._totalVenta=totalVenta;
+  W._totalLitros=totalLitros;
 }
 
-// ─── Save ─────────────────────────────────────────────────────────────────────
 async function saveCorte(container){
   try {
-    // 1. Insert liquidacion header
     const {data:corte,error:e1}=await supabase.from('liquidaciones').insert({
       idestacion:W.idestacion, dia:W.dia, turno:W.turno, idemp:W.idemp,
       precio_litro:W.precio_litro,
-      total_litros:W._totalLitros, total_venta:W._totalVenta,
+      total_litros:W._totalLitros, total_venta:0,
     }).select().single();
     if(e1) throw e1;
     const cid=corte.id;
 
-    // 2. Insert lecturas
     if(W.lecturas.length){
       const {error:e2}=await supabase.from('lecturas_corte').insert(
         W.lecturas.map(l=>({idcorte:cid,idpva:l.idpva,pva_nombre:l.nombre,lectura_ini:l.li,lectura_fin:l.lf})));
       if(e2) throw e2;
     }
 
-    // 3. Insert niveles
     if(W.niveles.length){
       const {error:e3}=await supabase.from('niveles_tanque_corte').insert(
         W.niveles.map(n=>({idcorte:cid,idtanque:n.idtanque,nombre:n.nombre,capacidad:n.capacidad,pct_ini:n.pct_ini,pct_fin:n.pct_fin})));
       if(e3) throw e3;
-    }
-
-    // 4. Insert transferencias
-    if(W.transf.length){
-      const {error:e4}=await supabase.from('transferencias').insert(
-        W.transf.map(t=>({
-          idestacion:W.idestacion, idcorte:cid,
-          cargador_nombre:t.nombre, capacidad_at:t.capacidad,
-          pct_ini_at:t.pct_ini, pct_fin_at:t.pct_fin,
-          litros_transferidos:((t.pct_ini-t.pct_fin)/100)*t.capacidad,
-        })));
-      if(e4) throw e4;
     }
 
     showToast('✅ Corte guardado exitosamente','success');
