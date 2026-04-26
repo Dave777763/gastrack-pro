@@ -8,8 +8,9 @@ import { renderTipoPVA }    from './modules/tipopva.js';
 import { renderPrecios }    from './modules/precios.js';
 import { renderPVAs }       from './modules/pvas.js';
 import { renderCargadores } from './modules/cargadores.js';
-import { renderLiquidaciones } from './modules/liquidaciones.js';
+import { renderLiquidaciones }  from './modules/liquidaciones.js';
 import { renderTransferencias } from './modules/transferencias.js';
+import { renderReportes }       from './modules/reportes.js';
 
 const container = document.getElementById('page-container');
 
@@ -26,6 +27,7 @@ const routes = {
   cargadores:     renderCargadores,
   liquidaciones:  renderLiquidaciones,
   transferencias: renderTransferencias,
+  reportes:       renderReportes,
 };
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -106,7 +108,8 @@ async function renderDashboard() {
       <div class="dashboard-grid">
         ${[
           ['liquidaciones','📋','Liquidaciones','Cortes de turno por estación'],
-          ['transferencias','🔄','Transferencias','Control de trasvase entre tanques'],
+          ['transferencias','🔄','Historial','Control de descargas de gas'],
+          ['reportes','📈','Reportes','Ventas, Inventario y Transferencias'],
         ].map(([p,i,n,d]) => `
           <div class="dashboard-card" data-goto="${p}">
             <div class="card-icon">${i}</div>
