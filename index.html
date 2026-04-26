@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GasTrack Pro — Estación de Carburación LP</title>
+  <meta name="description" content="Sistema de registro de ventas para estación de carburación de gas LP">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="logo-icon">⛽</div>
+          <div class="logo-text">
+            <h2>GasTrack Pro</h2>
+            <span>Estación LP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Principal</div>
+        <a class="nav-item" data-page="dashboard" href="#">
+          <span class="icon">🏠</span><span>Dashboard</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Catálogos</div>
+        <a class="nav-item" data-page="zonas" href="#">
+          <span class="icon">🗺️</span><span>Zonas</span>
+        </a>
+        <a class="nav-item" data-page="estaciones" href="#">
+          <span class="icon">🏭</span><span>Estaciones</span>
+        </a>
+        <a class="nav-item" data-page="tanques" href="#">
+          <span class="icon">🛢️</span><span>Tanques</span>
+        </a>
+        <a class="nav-item" data-page="empleados" href="#">
+          <span class="icon">👷</span><span>Empleados</span>
+        </a>
+        <a class="nav-item" data-page="tipopva" href="#">
+          <span class="icon">🔧</span><span>Tipo PVA</span>
+        </a>
+        <a class="nav-item" data-page="precios" href="#">
+          <span class="icon">💰</span><span>Precios</span>
+        </a>
+        <a class="nav-item" data-page="pvas" href="#">
+          <span class="icon">⚙️</span><span>PVAs</span>
+        </a>
+        <a class="nav-item" data-page="cargadores" href="#">
+          <span class="icon">🔌</span><span>Cargadores</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Operaciones</div>
+        <a class="nav-item" data-page="liquidaciones" href="#">
+          <span class="icon">📋</span><span>Liquidaciones</span>
+        </a>
+        <a class="nav-item" data-page="transferencias" href="#">
+          <span class="icon">🔄</span><span>Transferencias</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main id="content">
+      <div id="page-container">
+        <!-- Dynamic content loaded here -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

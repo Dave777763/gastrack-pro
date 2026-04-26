@@ -1,0 +1,25 @@
+# GasTrack Pro — Dependencias del entorno
+
+# Archivo de configuración de Supabase — NUNCA subir al repo
+js/supabase-config.js
+
+# Variables de entorno locales
+.env
+.env.local
+.env.*.local
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Node (si se agrega después)
+node_modules/
