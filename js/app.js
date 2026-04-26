@@ -9,6 +9,7 @@ import { renderPrecios }    from './modules/precios.js';
 import { renderPVAs }       from './modules/pvas.js';
 import { renderCargadores } from './modules/cargadores.js';
 import { renderLiquidaciones } from './modules/liquidaciones.js';
+import { renderTransferencias } from './modules/transferencias.js';
 
 const container = document.getElementById('page-container');
 
@@ -24,7 +25,7 @@ const routes = {
   pvas:           renderPVAs,
   cargadores:     renderCargadores,
   liquidaciones:  renderLiquidaciones,
-  transferencias: () => renderPlaceholder('🔄', 'Transferencias', 'Módulo en construcción — próximamente'),
+  transferencias: renderTransferencias,
 };
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
