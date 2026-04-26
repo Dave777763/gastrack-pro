@@ -45,10 +45,14 @@ async function loadList() {
       <td>${r.estaciones?.nombre||'—'}</td>
       <td>${r.empleados?`${r.empleados.nombre} ${r.empleados.paterno}`:'—'}</td>
       <td class="td-bold">${r.total_litros?Number(r.total_litros).toLocaleString('es-MX',{minimumFractionDigits:2})+' L':'—'}</td>
-      <td><button class="btn btn-danger btn-icon btn-sm" data-del="${r.id}">🗑️</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-primary btn-icon btn-sm" data-view="${r.id}" title="Ver Detalles">👁️</button>
+        <button class="btn btn-danger btn-icon btn-sm" data-del="${r.id}" title="Eliminar">🗑️</button>
+      </td>
     </tr>`).join('')}
     </tbody></table></div>`;
   document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>delCorte(b.dataset.del)));
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>viewCorte(b.dataset.view)));
 }
 
 function turnoClr(t){ return t==='Matutino'?'warning':t==='Vespertino'?'cyan':'primary'; }
@@ -58,6 +62,111 @@ async function delCorte(id){
   const {error}=await supabase.from('liquidaciones').delete().eq('id',id);
   if(error){showToast('Error: '+error.message,'error');return;}
   showToast('Corte eliminado','success'); await loadList();
+}
+
+async function viewCorte(id) {
+  const { data: liq, error } = await supabase.from('liquidaciones')
+    .select(`
+      *,
+      estaciones(nombre),
+      empleados(nombre,paterno),
+      lecturas_corte(pvas(nombre), lectura_ini, lectura_fin),
+      niveles_tanque_corte(tanques(nombre), capacidad, pct_ini, pct_fin),
+      transferencias(cargador_nombre, litros_recibidos_est, litros_transferidos)
+    `)
+    .eq('id', id)
+    .single();
+  
+  if (error) { showToast('Error cargando detalles del corte', 'error'); return; }
+  
+  const fmt = (n, d=2) => Number(n).toLocaleString('es-MX',{minimumFractionDigits:d, maximumFractionDigits:d});
+  
+  let html = `
+    <div class="modal-header">
+      <h2>Detalle del Corte - ${liq.dia}</h2>
+      <button class="modal-close">×</button>
+    </div>
+    <div class="modal-body" style="max-height:80vh; overflow-y:auto; padding:24px; font-size:14px; background:var(--bg-primary)">
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+        <div style="padding:16px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Estación y Turno</div>
+          <div style="font-size:18px;font-weight:700">${liq.estaciones?.nombre} <span class="badge badge-${turnoClr(liq.turno)}" style="font-size:12px;vertical-align:middle">${liq.turno}</span></div>
+        </div>
+        <div style="padding:16px; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Empleado Responsable</div>
+          <div style="font-size:18px;font-weight:700">${liq.empleados?`${liq.empleados.nombre} ${liq.empleados.paterno||''}`:'—'}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow:hidden">
+        <h3 style="padding:12px 16px; background:rgba(16,185,129,0.1); border-bottom:1px solid var(--border); font-size:14px; margin:0">⛽ 1. VENTAS (PUNTOS DE VENTA)</h3>
+        <table class="data-table" style="margin:0">
+          <thead><tr><th>PVA</th><th style="text-align:right">Lectura Inicial</th><th style="text-align:right">Lectura Final</th><th style="text-align:right">Litros Vendidos</th></tr></thead>
+          <tbody>
+            ${(liq.lecturas_corte||[]).map(l => {
+              const diff = (l.lectura_fin||0) - (l.lectura_ini||0);
+              return `<tr>
+                <td style="font-weight:600">${l.pvas?.nombre || '—'}</td>
+                <td style="text-align:right;color:var(--text-muted)">${fmt(l.lectura_ini)}</td>
+                <td style="text-align:right;color:var(--text-muted)">${fmt(l.lectura_fin)}</td>
+                <td style="text-align:right;font-weight:700;color:var(--text-primary)">${fmt(diff)} L</td>
+              </tr>`;
+            }).join('')}
+            <tr style="background:rgba(255,255,255,0.02)">
+              <td colspan="3" style="text-align:right;font-size:12px;color:var(--text-muted);text-transform:uppercase">Volumen Total Vendido</td>
+              <td style="text-align:right;font-weight:800;color:var(--success);font-size:16px">${fmt(liq.total_litros)} L</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-bottom:24px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow:hidden">
+        <h3 style="padding:12px 16px; background:rgba(99,102,241,0.1); border-bottom:1px solid var(--border); font-size:14px; margin:0">🛢️ 2. NIVELES DE TANQUES</h3>
+        <table class="data-table" style="margin:0">
+          <thead><tr><th>Tanque</th><th>Capacidad</th><th style="text-align:center">% Inicial</th><th style="text-align:right">Lts Iniciales</th><th style="text-align:center">% Final</th><th style="text-align:right">Lts Finales</th></tr></thead>
+          <tbody>
+            ${(liq.niveles_tanque_corte||[]).map(n => {
+              const cap = n.capacidad||0;
+              const ltsIni = (n.pct_ini/100)*cap;
+              const ltsFin = (n.pct_fin/100)*cap;
+              return `<tr>
+                <td style="font-weight:600">${n.tanques?.nombre || '—'}</td>
+                <td style="color:var(--text-muted)">${fmt(cap)} L</td>
+                <td style="text-align:center;color:var(--text-muted)">${n.pct_ini}%</td>
+                <td style="text-align:right;color:var(--text-muted)">${fmt(ltsIni)} L</td>
+                <td style="text-align:center;font-weight:600">${n.pct_fin}%</td>
+                <td style="text-align:right;font-weight:700">${fmt(ltsFin)} L</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow:hidden">
+        <h3 style="padding:12px 16px; background:rgba(245,158,11,0.1); border-bottom:1px solid var(--border); font-size:14px; margin:0">🔄 3. DESCARGAS DE PIPAS EN ESTE TURNO</h3>
+        ${(!liq.transferencias || liq.transferencias.length === 0) 
+          ? `<div style="padding:24px;text-align:center;color:var(--text-muted)">No se registraron transferencias / recibos en este turno.</div>`
+          : `<table class="data-table" style="margin:0">
+              <thead><tr><th>Auto-Tanque</th><th style="text-align:right">Lts Medidor Pipa</th><th style="text-align:right">Lts Recibidos (Estación)</th></tr></thead>
+              <tbody>
+                ${liq.transferencias.map(t => {
+                  return `<tr>
+                    <td><span class="badge badge-primary">${t.cargador_nombre}</span></td>
+                    <td style="text-align:right;color:var(--text-muted)">${fmt(t.litros_transferidos)} L</td>
+                    <td style="text-align:right;font-weight:700;color:var(--success)">${fmt(t.litros_recibidos_est || t.litros_transferidos)} L</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>`
+        }
+      </div>
+    </div>
+  `;
+  
+  showModal(html, overlay => {
+    overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+  });
 }
 
 function renderWizard(container) {
