@@ -1,5 +1,5 @@
 import { supabase } from '../supabase-config.js';
-import { loadingHTML } from '../utils.js';
+import { loadingHTML, showModal } from '../utils.js';
 
 let CURRENT_TAB = 'ventas';
 let DATE_FROM = new Date().toISOString().split('T')[0];
@@ -128,8 +128,12 @@ async function loadInventarios(area) {
     return `<tr>
       <td class="td-bold">${r.dia}</td>
       <td>${r.estaciones?.nombre||'—'}</td>
-      <td style="color:var(--text-muted)">${fmt(ltsRecibidos)}</td>
-      <td style="color:var(--text-muted)">${fmt(ltsEntregados)}</td>
+      <td style="color:var(--text-muted)">
+        <span class="breakdown-btn" data-type="recibidos" data-ini="${invIni}" data-transf="${recibos}" data-total="${ltsRecibidos}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--primary);font-weight:600">${fmt(ltsRecibidos)} L</span>
+      </td>
+      <td style="color:var(--text-muted)">
+        <span class="breakdown-btn" data-type="entregados" data-fin="${invFin}" data-ventas="${ventas}" data-total="${ltsEntregados}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--primary);font-weight:600">${fmt(ltsEntregados)} L</span>
+      </td>
       <td style="text-align:right; font-weight:800; color:${colorBal}">${dif>0?'+':''}${fmt(dif)} L</td>
     </tr>`;
   }).join('');
@@ -154,6 +158,39 @@ async function loadInventarios(area) {
       <tbody>${rows}</tbody>
     </table>
   `;
+
+  area.querySelectorAll('.breakdown-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const d = e.currentTarget.dataset;
+      let html = '';
+      if(d.type === 'recibidos'){
+        html = `
+          <div class="modal-header"><h2>Desglose: Litros Recibidos</h2><button class="modal-close">×</button></div>
+          <div class="modal-body">
+            <table class="data-table" style="font-size:14px"><tbody>
+              <tr><td>Inventario Inicial</td><td style="text-align:right">${fmt(d.ini)} L</td></tr>
+              <tr><td>+ Transferencias (Descargas)</td><td style="text-align:right;color:var(--success)">+ ${fmt(d.transf)} L</td></tr>
+              <tr style="border-top:2px solid var(--border);font-weight:bold;font-size:18px"><td>Total Recibidos</td><td style="text-align:right">${fmt(d.total)} L</td></tr>
+            </tbody></table>
+          </div>`;
+      } else {
+        html = `
+          <div class="modal-header"><h2>Desglose: Litros Entregados</h2><button class="modal-close">×</button></div>
+          <div class="modal-body">
+            <table class="data-table" style="font-size:14px"><tbody>
+              <tr><td>Inventario Final</td><td style="text-align:right">${fmt(d.fin)} L</td></tr>
+              <tr><td>+ Ventas en Turno</td><td style="text-align:right;color:var(--success)">+ ${fmt(d.ventas)} L</td></tr>
+              <tr style="border-top:2px solid var(--border);font-weight:bold;font-size:18px"><td>Total Entregados</td><td style="text-align:right">${fmt(d.total)} L</td></tr>
+            </tbody></table>
+          </div>`;
+      }
+      showModal(html, overlay => {
+        overlay.querySelector('.modal-close').addEventListener('click', () => {
+          overlay.remove();
+        });
+      });
+    });
+  });
 }
 
 async function loadTransferencias(area) {
