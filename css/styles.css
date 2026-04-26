@@ -344,3 +344,7 @@ select.form-control { cursor: pointer; }
 .confirm-body .confirm-icon { font-size: 40px; margin-bottom: 12px; }
 .confirm-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
 .confirm-body p { font-size: 13px; color: var(--text-muted); }
+
+/* ─── Wizard ─── */
+.wizard-bar { margin-bottom: 4px; }
+.transf-row .form-group { margin-bottom: 0; }

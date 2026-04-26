@@ -8,6 +8,7 @@ import { renderTipoPVA }    from './modules/tipopva.js';
 import { renderPrecios }    from './modules/precios.js';
 import { renderPVAs }       from './modules/pvas.js';
 import { renderCargadores } from './modules/cargadores.js';
+import { renderLiquidaciones } from './modules/liquidaciones.js';
 
 const container = document.getElementById('page-container');
 
@@ -22,7 +23,7 @@ const routes = {
   precios:        renderPrecios,
   pvas:           renderPVAs,
   cargadores:     renderCargadores,
-  liquidaciones:  () => renderPlaceholder('📋', 'Liquidaciones',  'Módulo en construcción — próximamente'),
+  liquidaciones:  renderLiquidaciones,
   transferencias: () => renderPlaceholder('🔄', 'Transferencias', 'Módulo en construcción — próximamente'),
 };
 
