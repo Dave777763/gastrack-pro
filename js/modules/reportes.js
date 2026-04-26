@@ -96,7 +96,7 @@ async function loadVentas(area) {
 
 async function loadInventarios(area) {
   const { data: liqs, error: e1 } = await supabase.from('liquidaciones')
-    .select('id, dia, turno, total_litros, estaciones(nombre), niveles_tanque_corte(idtanque, nombre, capacidad, pct_ini, pct_fin), transferencias(litros_recibidos_est)')
+    .select('id, dia, turno, total_litros, estaciones(nombre), niveles_tanque_corte(idtanque, nombre, capacidad, pct_ini, pct_fin), transferencias(litros_recibidos_est, litros_transferidos)')
     .gte('dia', DATE_FROM)
     .lte('dia', DATE_TO)
     .order('dia', {ascending: false});
@@ -109,7 +109,7 @@ async function loadInventarios(area) {
   let rows = liqs.map(r => {
     const invIni = (r.niveles_tanque_corte||[]).reduce((s,n)=>s+((n.pct_ini/100)*n.capacidad),0);
     const invFin = (r.niveles_tanque_corte||[]).reduce((s,n)=>s+((n.pct_fin/100)*n.capacidad),0);
-    const recibos = (r.transferencias||[]).reduce((s,t)=>s+(t.litros_recibidos_est||0),0);
+    const recibos = (r.transferencias||[]).reduce((s,t)=>s+(t.litros_recibidos_est || t.litros_transferidos || 0),0);
     const ventas = r.total_litros||0;
     
     // Total Entregados = Inv Final + Ventas

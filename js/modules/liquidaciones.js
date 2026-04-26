@@ -386,7 +386,7 @@ function renderStep4(area){
   const invFin = W.niveles.reduce((s,n)=>s+((n.pct_fin/100)*n.capacidad),0);
   
   // Total de gas recibido en todas las transferencias de este turno
-  const totalRecibido = W.transf.reduce((s,t)=>s+t.litros_recibidos_est, 0);
+  const totalRecibido = W.transf.reduce((s,t)=>s+(t.litros_recibidos_est || t.litros_transferidos || 0), 0);
 
   // Total Entregados = Inv Final + Ventas
   const ltsEntregados = invFin + totalLitrosVenta;
