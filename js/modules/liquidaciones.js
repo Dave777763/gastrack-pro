@@ -262,8 +262,12 @@ function bindTransfCards(){
 }
 
 function openTransferModal(){
+  const estNombre = document.getElementById('s-est')?.selectedOptions[0]?.text || 'Estación actual';
   const optsCarg = _cargadoresCache.map(c=>`<option value="${c.id}">${c.pva}</option>`).join('');
-  const optsTanq = _tanquesCache.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('');
+  
+  // Si solo hay un tanque en la estación, lo pre-seleccionamos
+  const optsTanq = _tanquesCache.map(t=>`<option value="${t.id}" ${_tanquesCache.length===1?'selected':''}>${t.nombre}</option>`).join('');
+  
   const pvasRows = _pvasCache.map(p=>`<tr>
     <td>${p.pva}</td>
     <td><input type="number" class="form-control li-pva-t" data-id="${p.id}" data-name="${p.pva}" placeholder="0"></td>
@@ -272,7 +276,7 @@ function openTransferModal(){
 
   showModal(`
     <div class="modal-header">
-      <h2>Registrar Descarga de Auto-Tanque</h2>
+      <h2>Registrar Descarga en <span style="color:var(--primary)">${estNombre}</span></h2>
       <button class="modal-close">×</button>
     </div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto;padding-right:10px">
@@ -281,7 +285,7 @@ function openTransferModal(){
         <div class="form-group"><label class="form-label">Auto-Tanque (Cargador) *</label>
           <select id="m-carg" class="form-control"><option value="">— Selecciona —</option>${optsCarg}</select></div>
         <div class="form-group"><label class="form-label">Tanque Receptor *</label>
-          <select id="m-tanq" class="form-control"><option value="">— Selecciona —</option>${optsTanq}</select></div>
+          <select id="m-tanq" class="form-control">${_tanquesCache.length!==1?'<option value="">— Selecciona —</option>':''}${optsTanq}</select></div>
       </div>
 
       <div style="background:var(--bg-card);padding:12px;border-radius:8px;margin-bottom:16px;border:1px solid var(--border)">
