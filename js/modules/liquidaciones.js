@@ -124,7 +124,7 @@ function renderStep(container){
 async function renderStep1(area){
   const [{data:ests},{data:emps},{data:precios}]=await Promise.all([
     supabase.from('estaciones').select('id,nombre').order('nombre'),
-    supabase.from('empleados').select('id,nombre,paterno,idestacion').order('paterno'),
+    supabase.from('empleados').select('id,nombre,paterno,rol').order('paterno'),
     supabase.from('precios').select('precio,dia,idzona').order('dia',{ascending:false}),
   ]);
   const optsEst=(ests||[]).map(e=>`<option value="${e.id}" ${W.idestacion===e.id?'selected':''}>${e.nombre}</option>`).join('');
@@ -144,9 +144,9 @@ async function renderStep1(area){
       <div class="form-group"><label class="form-label">Precio por Litro (MXN) *</label>
         <input id="s-precio" type="number" step="0.0001" class="form-control" placeholder="12.5000" value="${W.precio_litro||''}"></div>
     </div>
-    <div class="form-group"><label class="form-label">Empleado *</label>
+    <div class="form-group"><label class="form-label">Empleado responsable del corte *</label>
       <select id="s-emp" class="form-control"><option value="">— Selecciona —</option>
-        ${(emps||[]).map(e=>`<option value="${e.id}" ${W.idemp===e.id?'selected':''}>${e.paterno} ${e.nombre}</option>`).join('')}
+        ${(emps||[]).map(e=>`<option value="${e.id}" ${W.idemp===e.id?'selected':''}>${e.paterno} ${e.nombre} (${e.rol})</option>`).join('')}
       </select></div>`;
   document.getElementById('s-est').addEventListener('change',e=>{W.idestacion=e.target.value;W.lecturas=[];W.niveles=[];});
 }

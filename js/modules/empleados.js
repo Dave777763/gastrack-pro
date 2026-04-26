@@ -4,7 +4,7 @@ import { showToast, showModal, closeModal, confirmDialog, pageShell, loadingHTML
 const TABLE = 'empleados';
 
 export async function renderEmpleados(container) {
-  container.innerHTML = pageShell('Empleados', 'Catálogo de empleados por estación', '👷');
+  container.innerHTML = pageShell('Empleados', 'Catálogo de personal (Despachadores, Supervisores, Choferes)', '👷');
   document.getElementById('table-area').innerHTML = loadingHTML();
   await loadTable();
   document.getElementById('btn-add').addEventListener('click', () => openForm());
@@ -13,21 +13,22 @@ export async function renderEmpleados(container) {
 
 async function loadTable() {
   const { data: rows, error } = await supabase
-    .from(TABLE).select('*, estaciones(nombre)').order('paterno');
+    .from(TABLE).select('*').order('paterno');
   const area = document.getElementById('table-area');
   if (error) { area.innerHTML = `<p style="padding:20px;color:var(--danger)">Error: ${error.message}</p>`; return; }
   if (!rows.length) { area.innerHTML = emptyHTML('empleado'); return; }
 
   area.innerHTML = `
     <table class="data-table">
-      <thead><tr><th>#</th><th>Nombre Completo</th><th>Estación</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>#</th><th>Nombre Completo</th><th>Rol</th><th>Acciones</th></tr></thead>
       <tbody id="emp-tbody">
         ${rows.map((r, i) => {
           const full = `${r.paterno} ${r.materno || ''} ${r.nombre}`.trim();
+          let badgeColor = r.rol === 'Supervisor' ? 'warning' : r.rol === 'Chofer' ? 'primary' : 'cyan';
           return `<tr>
             <td>${i + 1}</td>
             <td class="td-bold">${full}</td>
-            <td><span class="badge badge-cyan">${r.estaciones?.nombre || '—'}</span></td>
+            <td><span class="badge badge-${badgeColor}">${r.rol}</span></td>
             <td>
               <button class="btn btn-secondary btn-icon btn-sm" data-edit="${r.id}">✏️</button>
               <button class="btn btn-danger btn-icon btn-sm" data-del="${r.id}" data-name="${full}">🗑️</button>
@@ -43,9 +44,9 @@ async function loadTable() {
     btn.addEventListener('click', () => confirmDialog(`Se eliminará a <strong>${btn.dataset.name}</strong>`, () => deleteRecord(btn.dataset.del))));
 }
 
-async function openForm(id = null, data = {}) {
-  const { data: estaciones } = await supabase.from('estaciones').select('id,nombre').order('nombre');
-  const opts = (estaciones || []).map(e => `<option value="${e.id}" ${data.idestacion === e.id ? 'selected' : ''}>${e.nombre}</option>`).join('');
+function openForm(id = null, data = {}) {
+  const roles = ['Despachador', 'Supervisor', 'Chofer'];
+  const opts = roles.map(r => `<option value="${r}" ${data.rol === r ? 'selected' : ''}>${r}</option>`).join('');
   showModal(`
     <div class="modal-header">
       <h2>${id ? 'Editar' : 'Nuevo'} Empleado</h2>
@@ -67,8 +68,11 @@ async function openForm(id = null, data = {}) {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Estación *</label>
-        <select id="f-est" class="form-control"><option value="">— Selecciona —</option>${opts}</select>
+        <label class="form-label">Rol Operativo *</label>
+        <select id="f-rol" class="form-control">
+          ${!data.rol ? '<option value="">— Selecciona —</option>' : ''}
+          ${opts}
+        </select>
       </div>
     </div>
     <div class="modal-footer">
@@ -84,9 +88,9 @@ async function saveRecord(id, overlay) {
   const nombre = overlay.querySelector('#f-nombre').value.trim();
   const paterno = overlay.querySelector('#f-paterno').value.trim();
   const materno = overlay.querySelector('#f-materno').value.trim();
-  const idestacion = overlay.querySelector('#f-est').value;
-  if (!nombre || !paterno || !idestacion) { showToast('Nombre, paterno y estación son requeridos', 'error'); return; }
-  const payload = { nombre, paterno, materno, idestacion };
+  const rol = overlay.querySelector('#f-rol').value;
+  if (!nombre || !paterno || !rol) { showToast('Nombre, paterno y rol son requeridos', 'error'); return; }
+  const payload = { nombre, paterno, materno, rol };
   const { error } = id
     ? await supabase.from(TABLE).update(payload).eq('id', id)
     : await supabase.from(TABLE).insert(payload);
