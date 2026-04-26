@@ -39,14 +39,13 @@ async function loadList() {
   }
   area.innerHTML = `<div class="card"><table class="data-table"><thead><tr>
     <th>Fecha</th><th>Turno</th><th>Estación</th><th>Empleado</th>
-    <th>Litros</th><th>Total Venta</th><th>Acciones</th></tr></thead><tbody>
+    <th>Litros</th><th>Acciones</th></tr></thead><tbody>
     ${data.map(r=>`<tr>
       <td class="td-bold">${r.dia}</td>
       <td><span class="badge badge-${turnoClr(r.turno)}">${r.turno}</span></td>
       <td>${r.estaciones?.nombre||'—'}</td>
       <td>${r.empleados?`${r.empleados.nombre} ${r.empleados.paterno}`:'—'}</td>
-      <td>${r.total_litros?Number(r.total_litros).toLocaleString('es-MX',{minimumFractionDigits:2})+' L':'—'}</td>
-      <td class="td-bold">${r.total_venta?'$'+Number(r.total_venta).toLocaleString('es-MX',{minimumFractionDigits:2}):'—'}</td>
+      <td class="td-bold">${r.total_litros?Number(r.total_litros).toLocaleString('es-MX',{minimumFractionDigits:2})+' L':'—'}</td>
       <td><button class="btn btn-danger btn-icon btn-sm" data-del="${r.id}">🗑️</button></td>
     </tr>`).join('')}
     </tbody></table></div>`;
@@ -122,10 +121,9 @@ function renderStep(container){
 
 // ─── Step 1: Datos generales ──────────────────────────────────────────────────
 async function renderStep1(area){
-  const [{data:ests},{data:emps},{data:precios}]=await Promise.all([
+  const [{data:ests},{data:emps}]=await Promise.all([
     supabase.from('estaciones').select('id,nombre').order('nombre'),
     supabase.from('empleados').select('id,nombre,paterno,rol').order('paterno'),
-    supabase.from('precios').select('precio,dia,idzona').order('dia',{ascending:false}),
   ]);
   const optsEst=(ests||[]).map(e=>`<option value="${e.id}" ${W.idestacion===e.id?'selected':''}>${e.nombre}</option>`).join('');
   area.innerHTML=`
@@ -141,13 +139,11 @@ async function renderStep1(area){
         <select id="s-turno" class="form-control">
           ${['Matutino','Vespertino','Nocturno'].map(t=>`<option ${W.turno===t?'selected':''}>${t}</option>`).join('')}
         </select></div>
-      <div class="form-group"><label class="form-label">Precio por Litro (MXN) *</label>
-        <input id="s-precio" type="number" step="0.0001" class="form-control" placeholder="12.5000" value="${W.precio_litro||''}"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Empleado responsable del corte *</label>
-      <select id="s-emp" class="form-control"><option value="">— Selecciona —</option>
-        ${(emps||[]).map(e=>`<option value="${e.id}" ${W.idemp===e.id?'selected':''}>${e.paterno} ${e.nombre} (${e.rol})</option>`).join('')}
-      </select></div>`;
+      <div class="form-group"><label class="form-label">Empleado responsable del corte *</label>
+        <select id="s-emp" class="form-control"><option value="">— Selecciona —</option>
+          ${(emps||[]).map(e=>`<option value="${e.id}" ${W.idemp===e.id?'selected':''}>${e.paterno} ${e.nombre} (${e.rol})</option>`).join('')}
+        </select></div>
+    </div>`;
   document.getElementById('s-est').addEventListener('change',e=>{W.idestacion=e.target.value;W.lecturas=[];W.niveles=[];});
 }
 
@@ -157,8 +153,8 @@ function validateStep(){
     W.dia=document.getElementById('s-dia')?.value||W.dia;
     W.turno=document.getElementById('s-turno')?.value||W.turno;
     W.idemp=document.getElementById('s-emp')?.value||W.idemp;
-    W.precio_litro=parseFloat(document.getElementById('s-precio')?.value||0);
-    if(!W.idestacion||!W.dia||!W.turno||!W.idemp||!W.precio_litro){
+    W.precio_litro=0;
+    if(!W.idestacion||!W.dia||!W.turno||!W.idemp){
       showToast('Completa todos los campos','error'); return false;}
   }
   if(W.step===2){
@@ -284,7 +280,7 @@ function collectTransf(){
 function renderStep4(area){
   collectTransf();
   const totalLitros=W.lecturas.reduce((s,l)=>s+(l.lf-l.li),0);
-  const totalVenta=totalLitros*W.precio_litro;
+  const totalVenta=0; // Omitido por el momento
   const litrosTransf=W.transf.reduce((s,t)=>s+(((t.pct_ini-t.pct_fin)/100)*t.capacidad),0);
   const invIni=W.niveles.reduce((s,n)=>s+((n.pct_ini/100)*n.capacidad),0);
   const invFin=W.niveles.reduce((s,n)=>s+((n.pct_fin/100)*n.capacidad),0);
@@ -295,8 +291,6 @@ function renderStep4(area){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.15)">⛽</div>
         <div class="stat-info"><h3>${fmt(totalLitros)} L</h3><p>Total Litros Vendidos</p></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.15)">💰</div>
-        <div class="stat-info"><h3>$${fmt(totalVenta)}</h3><p>Total Venta (${fmt(W.precio_litro,4)}/L)</p></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:rgba(6,182,212,0.15)">🔄</div>
         <div class="stat-info"><h3>${fmt(litrosTransf)} L</h3><p>Gas Recibido (transferencias)</p></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:rgba(${bal>1?'239,68,68':'245,158,11'},0.15)">${bal>1?'⚠️':'✅'}</div>
@@ -316,11 +310,10 @@ function renderStep4(area){
     </div>
     <div class="card" style="padding:16px">
       <h4 style="font-size:12px;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase">VENTAS POR PVA</h4>
-      <table class="data-table"><thead><tr><th>PVA</th><th>L. Inicial</th><th>L. Final</th><th>Litros</th><th>Importe</th></tr></thead><tbody>
+      <table class="data-table"><thead><tr><th>PVA</th><th>L. Inicial</th><th>L. Final</th><th>Litros</th></tr></thead><tbody>
         ${W.lecturas.map(l=>`<tr>
           <td class="td-bold">${l.nombre}</td><td>${fmt(l.li)}</td><td>${fmt(l.lf)}</td>
           <td style="color:var(--success)">${fmt(l.lf-l.li)} L</td>
-          <td>$${fmt((l.lf-l.li)*W.precio_litro)}</td>
         </tr>`).join('')}
       </tbody></table>
     </div>`;
