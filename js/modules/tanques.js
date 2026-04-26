@@ -61,8 +61,8 @@ async function openForm(id = null, data = {}) {
           <input id="f-cap" type="number" min="0" class="form-control" placeholder="10000" value="${data.capacidad || ''}">
         </div>
         <div class="form-group">
-          <label class="form-label">Estación *</label>
-          <select id="f-est" class="form-control"><option value="">— Selecciona —</option>${opts}</select>
+          <label class="form-label">Estación (Opcional)</label>
+          <select id="f-est" class="form-control"><option value="">— Ninguna (Móvil) —</option>${opts}</select>
         </div>
       </div>
     </div>
@@ -79,8 +79,8 @@ async function saveRecord(id, overlay) {
   const nombre = overlay.querySelector('#f-nombre').value.trim();
   const capacidad = parseFloat(overlay.querySelector('#f-cap').value);
   const idestacion = overlay.querySelector('#f-est').value;
-  if (!nombre || isNaN(capacidad) || !idestacion) { showToast('Todos los campos son requeridos', 'error'); return; }
-  const payload = { nombre, capacidad, idestacion };
+  if (!nombre || isNaN(capacidad)) { showToast('Nombre y capacidad requeridos', 'error'); return; }
+  const payload = { nombre, capacidad, idestacion: idestacion || null };
   const { error } = id
     ? await supabase.from(TABLE).update(payload).eq('id', id)
     : await supabase.from(TABLE).insert(payload);
