@@ -15,6 +15,7 @@ export async function renderReportes(container) {
         <div class="form-group" style="margin:0"><label class="form-label">Desde</label><input type="date" id="rep-desde" class="form-control" value="${DATE_FROM}"></div>
         <div class="form-group" style="margin:0"><label class="form-label">Hasta</label><input type="date" id="rep-hasta" class="form-control" value="${DATE_TO}"></div>
         <button class="btn btn-primary" id="rep-btn-buscar" style="height:38px; padding:0 24px">🔍 Generar</button>
+        <button class="btn btn-secondary" id="rep-btn-excel" style="height:38px; padding:0 24px; margin-left:auto">📥 Excel</button>
       </div>
 
       <div class="wizard-bar" style="margin-bottom:16px">
@@ -37,6 +38,8 @@ export async function renderReportes(container) {
     loadTab();
   });
   
+  document.getElementById('rep-btn-excel').addEventListener('click', exportTableToCSV);
+  
   document.querySelectorAll('.rep-tab').forEach(t => t.addEventListener('click', (e) => {
     CURRENT_TAB = e.currentTarget.dataset.tab;
     renderReportes(container);
@@ -56,6 +59,32 @@ async function loadTab() {
 
 const fmt = (n, d=2) => Number(n).toLocaleString('es-MX', {minimumFractionDigits:d, maximumFractionDigits:d});
 const c_str = (n) => `<span style="color:${n>1?'var(--warning)':n<-1?'var(--danger)':'var(--text-primary)'}">${n>0?'+':''}${fmt(n)}</span>`;
+
+function exportTableToCSV() {
+  const table = document.querySelector('#rep-body table');
+  if (!table) return;
+  
+  let csv = [];
+  const rows = table.querySelectorAll('tr');
+  
+  for (let i = 0; i < rows.length; i++) {
+    let row = [], cols = rows[i].querySelectorAll('td, th');
+    for (let j = 0; j < cols.length; j++) {
+      let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, ' | ').replace(/"/g, '""');
+      row.push('"' + data + '"');
+    }
+    csv.push(row.join(','));
+  }
+  
+  const csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], {type: "text/csv;charset=utf-8;"});
+  const link = document.createElement("a");
+  link.download = `Reporte_${CURRENT_TAB}_${DATE_FROM}_${DATE_TO}.csv`;
+  link.href = window.URL.createObjectURL(csvFile);
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
 
 // ─── 1. BALANCE DE ESTACIONES ───────────────────────────────────────────────
 async function loadInventarios(area) {
