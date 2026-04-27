@@ -70,8 +70,8 @@ async function viewCorte(id) {
       *,
       estaciones(nombre),
       empleados(nombre,paterno),
-      lecturas_corte(pvas(nombre), lectura_ini, lectura_fin),
-      niveles_tanque_corte(tanques(nombre), capacidad, pct_ini, pct_fin),
+      lecturas_corte(pva_nombre, lectura_ini, lectura_fin),
+      niveles_tanque_corte(nombre, capacidad, pct_ini, pct_fin),
       transferencias(cargador_nombre, litros_recibidos_est, litros_transferidos)
     `)
     .eq('id', id)
@@ -107,7 +107,7 @@ async function viewCorte(id) {
             ${(liq.lecturas_corte||[]).map(l => {
               const diff = (l.lectura_fin||0) - (l.lectura_ini||0);
               return `<tr>
-                <td style="font-weight:600">${l.pvas?.nombre || '—'}</td>
+                <td style="font-weight:600">${l.pva_nombre || '—'}</td>
                 <td style="text-align:right;color:var(--text-muted)">${fmt(l.lectura_ini)}</td>
                 <td style="text-align:right;color:var(--text-muted)">${fmt(l.lectura_fin)}</td>
                 <td style="text-align:right;font-weight:700;color:var(--text-primary)">${fmt(diff)} L</td>
@@ -131,7 +131,7 @@ async function viewCorte(id) {
               const ltsIni = (n.pct_ini/100)*cap;
               const ltsFin = (n.pct_fin/100)*cap;
               return `<tr>
-                <td style="font-weight:600">${n.tanques?.nombre || '—'}</td>
+                <td style="font-weight:600">${n.nombre || '—'}</td>
                 <td style="color:var(--text-muted)">${fmt(cap)} L</td>
                 <td style="text-align:center;color:var(--text-muted)">${n.pct_ini}%</td>
                 <td style="text-align:right;color:var(--text-muted)">${fmt(ltsIni)} L</td>
