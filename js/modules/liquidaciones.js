@@ -82,6 +82,9 @@ async function viewCorte(id) {
   const fmt = (n, d=2) => Number(n).toLocaleString('es-MX',{minimumFractionDigits:d, maximumFractionDigits:d});
   
   let html = `
+    <style>
+      #global-modal .modal { width: 750px !important; max-width: 95vw !important; }
+    </style>
     <div class="modal-header">
       <h2>Detalle del Corte - ${liq.dia}</h2>
       <button class="modal-close">×</button>
@@ -99,7 +102,7 @@ async function viewCorte(id) {
         </div>
       </div>
 
-      <div style="margin-bottom:24px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow:hidden">
+      <div style="margin-bottom:24px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow-x:auto">
         <h3 style="padding:12px 16px; background:rgba(16,185,129,0.1); border-bottom:1px solid var(--border); font-size:14px; margin:0">⛽ 1. VENTAS (PUNTOS DE VENTA)</h3>
         <table class="data-table" style="margin:0">
           <thead><tr><th>PVA</th><th style="text-align:right">Lectura Inicial</th><th style="text-align:right">Lectura Final</th><th style="text-align:right">Litros Vendidos</th></tr></thead>
@@ -121,7 +124,7 @@ async function viewCorte(id) {
         </table>
       </div>
 
-      <div style="margin-bottom:24px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow:hidden">
+      <div style="margin-bottom:24px; background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow-x:auto">
         <h3 style="padding:12px 16px; background:rgba(99,102,241,0.1); border-bottom:1px solid var(--border); font-size:14px; margin:0">🛢️ 2. NIVELES DE TANQUES</h3>
         <table class="data-table" style="margin:0">
           <thead><tr><th>Tanque</th><th>Capacidad</th><th style="text-align:center">% Inicial</th><th style="text-align:right">Lts Iniciales</th><th style="text-align:center">% Final</th><th style="text-align:right">Lts Finales</th></tr></thead>
@@ -143,7 +146,7 @@ async function viewCorte(id) {
         </table>
       </div>
       
-      <div style="background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow:hidden">
+      <div style="background:var(--bg-card); border-radius:8px; border:1px solid var(--border); overflow-x:auto">
         <h3 style="padding:12px 16px; background:rgba(245,158,11,0.1); border-bottom:1px solid var(--border); font-size:14px; margin:0">🔄 3. DESCARGAS DE PIPAS EN ESTE TURNO</h3>
         ${(!liq.transferencias || liq.transferencias.length === 0) 
           ? `<div style="padding:24px;text-align:center;color:var(--text-muted)">No se registraron transferencias / recibos en este turno.</div>`
