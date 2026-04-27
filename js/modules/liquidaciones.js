@@ -72,7 +72,7 @@ async function viewCorte(id) {
       empleados(nombre,paterno),
       lecturas_corte(pva_nombre, lectura_ini, lectura_fin),
       niveles_tanque_corte(nombre, capacidad, pct_ini, pct_fin),
-      transferencias(cargador_nombre, litros_recibidos_est, litros_transferidos)
+      transferencias(cargador_nombre, litros_recibidos_est, litros_transferidos, estacion_pct_ini, estacion_pct_fin, litros_venta_durante, tanques(nombre, capacidad))
     `)
     .eq('id', id)
     .single();
@@ -154,10 +154,26 @@ async function viewCorte(id) {
               <thead><tr><th>Auto-Tanque</th><th style="text-align:right">Lts Medidor Pipa</th><th style="text-align:right">Lts Recibidos (Estación)</th></tr></thead>
               <tbody>
                 ${liq.transferencias.map(t => {
+                  const r_est = t.litros_recibidos_est || t.litros_transferidos || 0;
+                  
+                  // Desglose de la integración
+                  let desglose = '';
+                  if (t.estacion_pct_ini != null && t.estacion_pct_fin != null && t.tanques?.capacidad) {
+                    const ltsTanque = ((t.estacion_pct_fin - t.estacion_pct_ini) / 100) * t.tanques.capacidad;
+                    const ltsVentas = t.litros_venta_durante || 0;
+                    desglose = `<div style="font-size:11px; color:var(--text-muted); font-weight:normal; margin-top:4px; line-height:1.3">
+                      Lts Subieron Tanque: ${fmt(ltsTanque)} L<br>
+                      + Ventas en Descarga: ${fmt(ltsVentas)} L
+                    </div>`;
+                  }
+                  
                   return `<tr>
-                    <td><span class="badge badge-primary">${t.cargador_nombre}</span></td>
-                    <td style="text-align:right;color:var(--text-muted)">${fmt(t.litros_transferidos)} L</td>
-                    <td style="text-align:right;font-weight:700;color:var(--success)">${fmt(t.litros_recibidos_est || t.litros_transferidos)} L</td>
+                    <td style="vertical-align:top"><span class="badge badge-primary">${t.cargador_nombre}</span></td>
+                    <td style="text-align:right;color:var(--text-muted);vertical-align:top">${fmt(t.litros_transferidos)} L</td>
+                    <td style="text-align:right;vertical-align:top">
+                      <div style="font-weight:700;color:var(--success);font-size:15px">${fmt(r_est)} L</div>
+                      ${desglose}
+                    </td>
                   </tr>`;
                 }).join('')}
               </tbody>
