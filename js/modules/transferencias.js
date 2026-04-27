@@ -12,19 +12,21 @@ export async function renderTransferencias(container) {
 
 async function loadList() {
   const { data, error } = await supabase.from('transferencias')
-    .select('*, estaciones(nombre), cargadores(pva)').order('created_at',{ascending:false});
+    .select('*, estaciones(nombre), cargadores(pva), liquidaciones(dia, turno)').order('created_at',{ascending:false});
   const area = document.getElementById('transf-body');
   if (error) { area.innerHTML = `<p style="color:var(--danger);padding:20px">${error.message}</p>`; return; }
   if (!data.length) { area.innerHTML = emptyHTML('transferencia'); return; }
   
   area.innerHTML = `<div class="card"><table class="data-table"><thead><tr>
-    <th>Fecha/Hora</th><th>Estación</th><th>Auto-Tanque</th>
+    <th>Día (Corte)</th><th>Turno</th><th>Captura</th><th>Estación</th><th>Auto-Tanque</th>
     <th>Recibido (Estación)</th><th>Entregado (AT %)</th><th>Entregado (AT Medidor)</th></tr></thead><tbody>
     ${data.map(r=>{
       const medidor = (r.at_lectura_fin != null && r.at_lectura_ini != null) ? (r.at_lectura_fin - r.at_lectura_ini) : null;
       return `<tr>
-      <td class="td-bold">${new Date(r.created_at).toLocaleString('es-MX')}</td>
-      <td>${r.estaciones?.nombre||'—'}</td>
+      <td class="td-bold" style="color:var(--primary-light)">${r.liquidaciones?.dia || '—'}</td>
+      <td><span class="badge badge-warning" style="background:rgba(245,158,11,0.15);color:#fbbf24">${r.liquidaciones?.turno || '—'}</span></td>
+      <td style="font-size:11px;color:var(--text-muted)">${new Date(r.created_at).toLocaleString('es-MX')}</td>
+      <td style="font-weight:600">${r.estaciones?.nombre||'—'}</td>
       <td><span class="badge badge-primary">${r.cargadores?.pva||r.cargador_nombre||'—'}</span></td>
       <td style="color:var(--success)">${r.litros_recibidos_est?Number(r.litros_recibidos_est).toLocaleString('es-MX')+' L':'—'}</td>
       <td style="color:var(--warning)">${r.litros_transferidos?Number(r.litros_transferidos).toLocaleString('es-MX')+' L':'—'}</td>
