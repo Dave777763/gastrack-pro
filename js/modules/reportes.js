@@ -75,8 +75,9 @@ async function loadInventarios(area) {
     if(typeof acum[estId] === 'undefined') acum[estId] = 0;
 
     // String for %I and %F (in case of multiple tanks)
-    const pctI = (r.niveles_tanque_corte||[]).map(n => `${n.pct_ini}%`).join('<br>');
-    const pctF = (r.niveles_tanque_corte||[]).map(n => `${n.pct_fin}%`).join('<br>');
+    const hasMult = (r.niveles_tanque_corte||[]).length > 1;
+    const pctI = (r.niveles_tanque_corte||[]).map(n => hasMult ? `${n.nombre}: ${n.pct_ini}%` : `${n.pct_ini}%`).join('<br>');
+    const pctF = (r.niveles_tanque_corte||[]).map(n => hasMult ? `${n.nombre}: ${n.pct_fin}%` : `${n.pct_fin}%`).join('<br>');
 
     // A: Existencia inicial
     const A = (r.niveles_tanque_corte||[]).reduce((s,n)=>s+((n.pct_ini/100)*n.capacidad),0);
