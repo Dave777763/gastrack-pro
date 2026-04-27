@@ -80,8 +80,11 @@ async function loadInventarios(area) {
 
     // A: Existencia inicial
     const A = (r.niveles_tanque_corte||[]).reduce((s,n)=>s+((n.pct_ini/100)*n.capacidad),0);
-    // B: Transferencias
-    const B = (r.transferencias||[]).reduce((s,t)=>s+(t.litros_recibidos_est || t.litros_transferidos || 0),0);
+    // B: Transferencias (Lts Medidor Pipa)
+    const B = (r.transferencias||[]).reduce((s,t) => {
+      if (t.litros_transferidos != null) return s + Number(t.litros_transferidos);
+      return s + ((t.at_lectura_fin||0) - (t.at_lectura_ini||0));
+    }, 0);
     // C = A + B (Recibidos)
     const C = A + B;
 
