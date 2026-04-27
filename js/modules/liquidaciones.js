@@ -303,7 +303,21 @@ function validateStep(){
 async function loadPVAs(){
   const {data}=await supabase.from('pvas').select('id,pva').eq('idestacion',W.idestacion).order('pva');
   _pvasCache = data || [];
-  if(!W.lecturas.length) W.lecturas=(_pvasCache).map(p=>({idpva:p.id,nombre:p.pva,li:0,lf:0}));
+  
+  const { data: lastCorte } = await supabase.from('liquidaciones')
+    .select('id, lecturas_corte(idpva, lectura_fin)')
+    .eq('idestacion', W.idestacion)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  const prevLecturas = lastCorte?.[0]?.lecturas_corte || [];
+
+  if(!W.lecturas.length) {
+    W.lecturas=(_pvasCache).map(p=>{
+      const past = prevLecturas.find(l => l.idpva === p.id);
+      return {idpva:p.id, nombre:p.pva, li: past ? past.lectura_fin : '', lf:''};
+    });
+  }
 }
 
 function renderStep2(area){
@@ -324,13 +338,25 @@ function renderStep2(area){
 
 // ─── Step 3: Tanques y Modal de Transferencias ──────────────────────────────
 async function loadTanques(){
-  const [{data:tq},{data:cg}]=await Promise.all([
+  const [{data:tq},{data:cg}, {data:lastCorte}]=await Promise.all([
     supabase.from('tanques').select('id,nombre,capacidad').eq('idestacion',W.idestacion).order('nombre'),
-    supabase.from('cargadores').select('id,pva,tanques(capacidad)').order('pva')
+    supabase.from('cargadores').select('id,pva,tanques(capacidad)').order('pva'),
+    supabase.from('liquidaciones')
+      .select('id, niveles_tanque_corte(idtanque, pct_fin)')
+      .eq('idestacion', W.idestacion)
+      .order('created_at', { ascending: false })
+      .limit(1)
   ]);
   _tanquesCache = tq || [];
   _cargadoresCache = cg || [];
-  if(!W.niveles.length) W.niveles=(_tanquesCache).map(t=>({idtanque:t.id,nombre:t.nombre,capacidad:t.capacidad,pct_ini:0,pct_fin:0}));
+  const prevNiveles = lastCorte?.[0]?.niveles_tanque_corte || [];
+
+  if(!W.niveles.length) {
+    W.niveles=(_tanquesCache).map(t=>{
+      const past = prevNiveles.find(n => n.idtanque === t.id);
+      return {idtanque:t.id, nombre:t.nombre, capacidad:t.capacidad, pct_ini: past ? past.pct_fin : '', pct_fin: ''};
+    });
+  }
 }
 
 function renderStep3(area){
