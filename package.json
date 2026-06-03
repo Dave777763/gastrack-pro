@@ -1,0 +1,9 @@
+{
+  "name": "gastrack-pro",
+  "version": "1.0.0",
+  "description": "Sistema web para el registro de ventas de una estación de carburación de Gas LP",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {}
+}
